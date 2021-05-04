@@ -52,16 +52,6 @@ public class LaunchJMH {
             .toArray(MockHttpServletRequest[]::new);
 
     public static void main(String[] args) throws Exception {
-
-        URLClassLoader classLoader = (URLClassLoader) LaunchJMH.class.getClassLoader();
-        StringBuilder classpath = new StringBuilder();
-        for (URL url : classLoader.getURLs())
-            classpath.append(url.getPath()).append(File.pathSeparator);
-//        classpath.append("/D:/work/zymespace/benchmark/src/main/resources/")
-//                .append(File.pathSeparator);
-        System.out.print(classpath);
-        System.setProperty("java.class.path", classpath.toString());
-
         Options opt = new OptionsBuilder()
                 .include(LaunchJMH.class.getName() + ".*")
                 .timeUnit(TimeUnit.MILLISECONDS)
@@ -79,15 +69,26 @@ public class LaunchJMH {
     private PresentationsController controller;
 
     @Setup(Level.Trial)
-    public synchronized void initialize() {
+    public synchronized void startupSpring() {
         try {
             String args = "";
             if (context == null) {
                 context = SpringApplication.run(Launch.class, args);
             }
             controller = context.getBean(PresentationsController.class);
-            System.out.println(controller);
         } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @TearDown(Level.Trial)
+    public synchronized void shutdownSpring() {
+        try {
+            if(context != null) {
+                SpringApplication.exit(context);
+                context = null;
+            }
+        } catch(Exception e) {
             e.printStackTrace();
         }
     }
@@ -100,81 +101,80 @@ public class LaunchJMH {
         }
     }
 
-    @Benchmark
-    public void benchmarkJsp(LaunchJMH state, Blackhole bh) {
-        benchmarkTemplate(0);
-    }
-
-    @Benchmark
-    public void benchmarkFreemarker(LaunchJMH state, Blackhole bh) {
-        benchmarkTemplate(1);
-    }
-    @Benchmark
-    public void benchmarkVelocity(LaunchJMH state, Blackhole bh) {
-        benchmarkTemplate(2);
-    }
+//    @Benchmark
+//    public void benchmarkJsp(LaunchJMH state, Blackhole bh) {
+//        benchmarkTemplate(0);
+//    }
+//    @Benchmark
+//    public void benchmarkFreemarker(LaunchJMH state, Blackhole bh) {
+//        benchmarkTemplate(1);
+//    }
+//    @Benchmark
+//    public void benchmarkVelocity(LaunchJMH state, Blackhole bh) {
+//        benchmarkTemplate(2);
+//    }
     @Benchmark
     public void benchmarkThymeleaf(LaunchJMH state, Blackhole bh) {
         benchmarkTemplate(3);
     }
-    @Benchmark
-    public void benchmarkJade(LaunchJMH state, Blackhole bh) {
-        benchmarkTemplate(4);
-    }@Benchmark
-    public void benchmarkScalate(LaunchJMH state, Blackhole bh) {
-        benchmarkTemplate(5);
-    }
-    @Benchmark
-    public void benchmarkMustache(LaunchJMH state, Blackhole bh) {
-        benchmarkTemplate(6);
-    }
-    @Benchmark
-    public void benchmarkPebble(LaunchJMH state, Blackhole bh) {
-        benchmarkTemplate(7);
-    }
-    @Benchmark
-    public void benchmarkHandlebars(LaunchJMH state, Blackhole bh) {
-        benchmarkTemplate(8);
-    }
-    @Benchmark
-    public void benchmarkJtwig(LaunchJMH state, Blackhole bh) {
-        benchmarkTemplate(9);
-    }
-    @Benchmark
-    public void benchmarkHttl(LaunchJMH state, Blackhole bh) {
-        benchmarkTemplate(10);
-    }
-    @Benchmark
-    public void benchmarkChunk(LaunchJMH state, Blackhole bh) {
-        benchmarkTemplate(11);
-    }
-    @Benchmark
-    public void benchmarkHtmlFlow(LaunchJMH state, Blackhole bh) {
-        benchmarkTemplate(12);
-    }
-    @Benchmark
-    public void benchmarkTrimou(LaunchJMH state, Blackhole bh) {
-        benchmarkTemplate(13);
-    }
-    @Benchmark
-    public void benchmarkRocker(LaunchJMH state, Blackhole bh) {
-        benchmarkTemplate(14);
-    }
-    @Benchmark
-    public void benchmarkIckenham(LaunchJMH state, Blackhole bh) {
-        benchmarkTemplate(15);
-    }
-    @Benchmark
-    public void benchmarkRythm(LaunchJMH state, Blackhole bh) {
-        benchmarkTemplate(16);
-    }
-    @Benchmark
-    public void benchmarkGroovy(LaunchJMH state, Blackhole bh) {
-        benchmarkTemplate(17);
-    }
-    @Benchmark
-    public void benchmarkLiqp(LaunchJMH state, Blackhole bh) {
-        benchmarkTemplate(18);
-    }
+//    @Benchmark
+//    public void benchmarkJade(LaunchJMH state, Blackhole bh) {
+//        benchmarkTemplate(4);
+//    }@Benchmark
+//    public void benchmarkScalate(LaunchJMH state, Blackhole bh) {
+//        benchmarkTemplate(5);
+//    }
+//    @Benchmark
+//    public void benchmarkMustache(LaunchJMH state, Blackhole bh) {
+//        benchmarkTemplate(6);
+//    }
+//    @Benchmark
+//    public void benchmarkPebble(LaunchJMH state, Blackhole bh) {
+//        benchmarkTemplate(7);
+//    }
+//    @Benchmark
+//    public void benchmarkHandlebars(LaunchJMH state, Blackhole bh) {
+//        benchmarkTemplate(8);
+//    }
+//    @Benchmark
+//    public void benchmarkJtwig(LaunchJMH state, Blackhole bh) {
+//        benchmarkTemplate(9);
+//    }
+//    @Benchmark
+//    public void benchmarkHttl(LaunchJMH state, Blackhole bh) {
+//        benchmarkTemplate(10);
+//    }
+//    @Benchmark
+//    public void benchmarkChunk(LaunchJMH state, Blackhole bh) {
+//        benchmarkTemplate(11);
+//    }
+//    @Benchmark
+//    public void benchmarkHtmlFlow(LaunchJMH state, Blackhole bh) {
+//        benchmarkTemplate(12);
+//    }
+//    @Benchmark
+//    public void benchmarkTrimou(LaunchJMH state, Blackhole bh) {
+//        benchmarkTemplate(13);
+//    }
+//    @Benchmark
+//    public void benchmarkRocker(LaunchJMH state, Blackhole bh) {
+//        benchmarkTemplate(14);
+//    }
+//    @Benchmark
+//    public void benchmarkIckenham(LaunchJMH state, Blackhole bh) {
+//        benchmarkTemplate(15);
+//    }
+//    @Benchmark
+//    public void benchmarkRythm(LaunchJMH state, Blackhole bh) {
+//        benchmarkTemplate(16);
+//    }
+//    @Benchmark
+//    public void benchmarkGroovy(LaunchJMH state, Blackhole bh) {
+//        benchmarkTemplate(17);
+//    }
+//    @Benchmark
+//    public void benchmarkLiqp(LaunchJMH state, Blackhole bh) {
+//        benchmarkTemplate(18);
+//    }
 
 }
