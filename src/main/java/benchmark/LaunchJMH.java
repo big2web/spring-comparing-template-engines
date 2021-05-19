@@ -1,21 +1,15 @@
-package com.jeroenreijn.benchmark;
+package benchmark;
 
 import com.jeroenreijn.examples.Launch;
 import com.jeroenreijn.examples.controller.PresentationsController;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
-import org.openjdk.jmh.runner.Runner;
-import org.openjdk.jmh.runner.options.Options;
-import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.ui.ModelMap;
 
 import javax.servlet.http.HttpServletRequest;
-import java.io.File;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
@@ -51,18 +45,18 @@ public class LaunchJMH {
             .map(templateStr -> new MockHttpServletRequest("GET", "/" + templateStr))
             .toArray(MockHttpServletRequest[]::new);
 
-    public static void main(String[] args) throws Exception {
-        Options opt = new OptionsBuilder()
-                .include(LaunchJMH.class.getName() + ".*")
-                .timeUnit(TimeUnit.MILLISECONDS)
-                .threads(1)
-
-                .shouldFailOnError(true)
-                .shouldDoGC(true)
-                .build();
-
-        new Runner(opt).run();
-    }
+//    public static void main(String[] args) throws Exception {
+//        Options opt = new OptionsBuilder()
+//                .include(LaunchJMH.class.getName() + ".*")
+//                .timeUnit(TimeUnit.MILLISECONDS)
+//                .threads(1)
+//
+//                .shouldFailOnError(true)
+//                .shouldDoGC(true)
+//                .build();
+//
+//        new Runner(opt).run();
+//    }
 
     static ConfigurableApplicationContext context;
 
