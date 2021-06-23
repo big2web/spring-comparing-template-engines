@@ -1,17 +1,18 @@
 package benchmark;
 
 import com.jeroenreijn.examples.Launch;
-import com.jeroenreijn.examples.controller.PresentationsController;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.mock.web.MockHttpServletRequest;
-import org.springframework.ui.ModelMap;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
 
-import javax.servlet.http.HttpServletRequest;
-import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 
 /**
  * Some code on this class has been sampled from https://stackoverflow.com/a/41499972
@@ -41,61 +42,51 @@ public class LaunchJMH {
             "groovy",
             "liqp"
     };
-    private static final HttpServletRequest[] mockRequests = Arrays.stream(templates)
-            .map(templateStr -> new MockHttpServletRequest("GET", "/" + templateStr))
-            .toArray(MockHttpServletRequest[]::new);
-
-//    public static void main(String[] args) throws Exception {
-//        Options opt = new OptionsBuilder()
-//                .include(LaunchJMH.class.getName() + ".*")
-//                .timeUnit(TimeUnit.MILLISECONDS)
-//                .threads(1)
-//
-//                .shouldFailOnError(true)
-//                .shouldDoGC(true)
-//                .build();
-//
-//        new Runner(opt).run();
-//    }
 
     static ConfigurableApplicationContext context;
-
-    private PresentationsController controller;
+    static MockMvc mockMvc;
 
     @Setup(Level.Trial)
     public synchronized void startupSpring() {
         try {
-            String args = "";
             if (context == null) {
-                context = SpringApplication.run(Launch.class, args);
+                context = SpringApplication.run(Launch.class);
+                WebApplicationContext webApplicationContext = (WebApplicationContext) context;
+                mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext)
+                        .build();
             }
-            controller = context.getBean(PresentationsController.class);
         } catch (Exception e) {
-            e.printStackTrace();
+            //Force JMH crash
+            throw new RuntimeException(e);
         }
     }
 
     @TearDown(Level.Trial)
     public synchronized void shutdownSpring() {
         try {
-            if(context != null) {
+            if (context != null) {
                 SpringApplication.exit(context);
                 context = null;
             }
-        } catch(Exception e) {
-            e.printStackTrace();
+        } catch (Exception e) {
+            //Force JMH crash
+            throw new RuntimeException(e);
         }
     }
 
     private void benchmarkTemplate(int templateIdx) {
         try {
-            controller.showList(mockRequests[templateIdx], templates[templateIdx], new ModelMap());
+            mockMvc.perform(
+                    get("/" + templates[templateIdx])
+                            .accept(MediaType.ALL_VALUE)
+            );
         } catch (Exception e) {
-            e.printStackTrace();
+            //Force JMH crash
+            throw new RuntimeException(e);
         }
     }
 
-//    @Benchmark
+    //    @Benchmark
 //    public void benchmarkJsp(LaunchJMH state, Blackhole bh) {
 //        benchmarkTemplate(0);
 //    }
