@@ -1,13 +1,15 @@
 package com.jeroenreijn.examples.repository;
 
+import com.jeroenreijn.examples.model.Presentation;
+
+import java.util.Map;
 import java.util.Optional;
-import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-import com.jeroenreijn.examples.model.Presentation;
+import static java.util.Comparator.comparing;
+import static java.util.stream.Collectors.toList;
 
 public class InMemoryPresentationsRepository implements PresentationsRepository {
 
@@ -102,10 +104,14 @@ public class InMemoryPresentationsRepository implements PresentationsRepository 
 		/*
 		 * Ensure values in the same order because of the unit tests.
 		 * Using the HashMap does not ensure the same order in different executions.
+		 * We still need a List at the end because of the Freemarker and others.
 		 */
-		TreeMap<Long, Presentation> res = new TreeMap<>();
-		presentations.entrySet().forEach(pair -> res.put(pair.getKey(), pair.getValue()));
-		return  res.values();
+		return presentations
+			.entrySet()
+			.stream()
+			.sorted(comparing(Map.Entry::getKey))
+			.map(Map.Entry::getValue)
+			.collect(toList());
 	}
 
 	@Override
