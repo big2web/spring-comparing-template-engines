@@ -2,11 +2,11 @@ package benchmark;
 
 import com.jeroenreijn.examples.Launch;
 import org.openjdk.jmh.annotations.*;
-import org.openjdk.jmh.infra.Blackhole;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
@@ -18,7 +18,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
  * Some code on this class has been sampled from https://stackoverflow.com/a/41499972
  */
 @BenchmarkMode(Mode.Throughput)
-@OutputTimeUnit(TimeUnit.MINUTES)
+@OutputTimeUnit(TimeUnit.SECONDS)
 @State(Scope.Thread)
 public class LaunchJMH {
     private static final String[] templates = {
@@ -45,6 +45,8 @@ public class LaunchJMH {
 
     static ConfigurableApplicationContext context;
     static MockMvc mockMvc;
+
+
 
     @Setup(Level.Trial)
     public synchronized void startupSpring() {
@@ -74,33 +76,34 @@ public class LaunchJMH {
         }
     }
 
-    private void benchmarkTemplate(int templateIdx) {
+    private String benchmarkTemplate(int templateIdx) {
         try {
-            mockMvc.perform(
-                    get("/" + templates[templateIdx])
-                            .accept(MediaType.ALL_VALUE)
+            ResultActions res = mockMvc.perform(
+                get("/" + templates[templateIdx])
+                    .accept(MediaType.ALL_VALUE)
             );
+            return res.andReturn().getResponse().getContentAsString();
         } catch (Exception e) {
             //Force JMH crash
             throw new RuntimeException(e);
         }
     }
 
-    //    @Benchmark
-//    public void benchmarkJsp(LaunchJMH state, Blackhole bh) {
-//        benchmarkTemplate(0);
-//    }
-//    @Benchmark
-//    public void benchmarkFreemarker(LaunchJMH state, Blackhole bh) {
-//        benchmarkTemplate(1);
-//    }
+    @Benchmark
+    public String benchmarkJsp() {
+        return benchmarkTemplate(0);
+    }
+    @Benchmark
+    public String benchmarkFreemarker() {
+        return benchmarkTemplate(1);
+    }
 //    @Benchmark
 //    public void benchmarkVelocity(LaunchJMH state, Blackhole bh) {
 //        benchmarkTemplate(2);
 //    }
     @Benchmark
-    public void benchmarkThymeleaf(LaunchJMH state, Blackhole bh) {
-        benchmarkTemplate(3);
+    public String benchmarkThymeleaf() {
+        return benchmarkTemplate(3);
     }
 //    @Benchmark
 //    public void benchmarkJade(LaunchJMH state, Blackhole bh) {
@@ -133,18 +136,18 @@ public class LaunchJMH {
 //    public void benchmarkChunk(LaunchJMH state, Blackhole bh) {
 //        benchmarkTemplate(11);
 //    }
-//    @Benchmark
-//    public void benchmarkHtmlFlow(LaunchJMH state, Blackhole bh) {
-//        benchmarkTemplate(12);
-//    }
+    @Benchmark
+    public String benchmarkHtmlFlow() {
+        return benchmarkTemplate(12);
+    }
 //    @Benchmark
 //    public void benchmarkTrimou(LaunchJMH state, Blackhole bh) {
 //        benchmarkTemplate(13);
 //    }
-//    @Benchmark
-//    public void benchmarkRocker(LaunchJMH state, Blackhole bh) {
-//        benchmarkTemplate(14);
-//    }
+    @Benchmark
+    public String benchmarkRocker() {
+        return benchmarkTemplate(14);
+    }
 //    @Benchmark
 //    public void benchmarkIckenham(LaunchJMH state, Blackhole bh) {
 //        benchmarkTemplate(15);
