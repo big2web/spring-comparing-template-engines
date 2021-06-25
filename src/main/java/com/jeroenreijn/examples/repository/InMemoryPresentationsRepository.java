@@ -1,6 +1,8 @@
 package com.jeroenreijn.examples.repository;
 
 import java.util.Optional;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -97,7 +99,13 @@ public class InMemoryPresentationsRepository implements PresentationsRepository 
 
 	@Override
 	public Iterable<Presentation> findAll() {
-		return this.presentations.values();
+		/*
+		 * Ensure values in the same order because of the unit tests.
+		 * Using the HashMap does not ensure the same order in different executions.
+		 */
+		TreeMap<Long, Presentation> res = new TreeMap<>();
+		presentations.entrySet().forEach(pair -> res.put(pair.getKey(), pair.getValue()));
+		return  res.values();
 	}
 
 	@Override
