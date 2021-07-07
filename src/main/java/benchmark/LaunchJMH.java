@@ -1,18 +1,29 @@
 package benchmark;
 
 import com.jeroenreijn.examples.Launch;
+import org.apache.jasper.tagplugins.jstl.core.Url;
 import org.openjdk.jmh.annotations.*;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
+import java.io.*;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.*;
 
 /**
  * Some code on this class has been sampled from https://stackoverflow.com/a/41499972
@@ -76,27 +87,86 @@ public class LaunchJMH {
         }
     }
 
+    private static boolean isMock = false;
     private String benchmarkTemplate(int templateIdx) {
+        String url = "/" + templates[templateIdx];
         try {
-            ResultActions res = mockMvc.perform(
-                get("/" + templates[templateIdx])
-                    .accept(MediaType.ALL_VALUE)
-            );
-            return res.andReturn().getResponse().getContentAsString();
+            if(isMock) {
+                return mockMvcGetRequest(url);
+            } else {
+                //Assuming port and not reading from config!
+                return httpGetRequest("http://localhost:8080" + url);
+            }
         } catch (Exception e) {
             //Force JMH crash
             throw new RuntimeException(e);
         }
     }
 
+    /**
+     * Performs a request to an url.
+     * @param urlStr The request url string.
+     * @return The response string.
+     * @throws RuntimeException IOException.
+     */
+    private String httpGetRequest(String urlStr) throws IOException {
+        HttpURLConnection connection = null;
+        try {
+            URL url = new URL(urlStr);
+            connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+            connection.setRequestProperty("Accept", "application/xml");
+            InputStream inputStream = connection.getInputStream();
+            return inputStreamToString(inputStream);
+        } finally {
+            if (connection != null) {
+                connection.disconnect();
+            }
+        }
+    }
+
+    private String mockMvcGetRequest(String url) throws Exception {
+        ResultActions res = mockMvc.perform(
+                get(url)
+                        .accept(MediaType.ALL_VALUE)
+//                    .accept(MediaType.TEXT_HTML)
+
+        ).andDo(print());
+        MockHttpServletResponse response = res.andReturn().getResponse();
+        String forwardedUrl = response.getForwardedUrl();
+        if(forwardedUrl != null) {
+            res = mockMvc.perform(
+                    get(forwardedUrl)
+                            .accept(MediaType.ALL_VALUE)
+//                                .accept(MediaType.TEXT_HTML)
+
+            ).andDo(print());
+            response = res.andReturn().getResponse();
+        }
+        return response.getContentAsString();
+    }
+
+    /**
+     * Most performant out of other options:
+     * https://stackoverflow.com/questions/309424/how-do-i-read-convert-an-inputstream-into-a-string-in-java
+     * @param inputStream The input stream to convert to string.
+     * @return The resulting string.
+     */
+    private String inputStreamToString(InputStream inputStream) throws IOException {
+        ByteArrayOutputStream result = new ByteArrayOutputStream();
+        byte[] buffer = new byte[1024];
+        for (int length; (length = inputStream.read(buffer)) != -1; ) {
+            result.write(buffer, 0, length);
+        }
+        return result.toString(StandardCharsets.UTF_8.name());
+    }
+
     @Benchmark
     public String benchmarkJsp() {
         return benchmarkTemplate(0);
     }
-    @Benchmark
-    public String benchmarkFreemarker() {
-        return benchmarkTemplate(1);
-    }
+
+
 //    @Benchmark
 //    public void benchmarkVelocity(LaunchJMH state, Blackhole bh) {
 //        benchmarkTemplate(2);
@@ -136,7 +206,7 @@ public class LaunchJMH {
 //    public void benchmarkChunk(LaunchJMH state, Blackhole bh) {
 //        benchmarkTemplate(11);
 //    }
-    @Benchmark
+//    @Benchmark
     public String benchmarkHtmlFlow() {
         return benchmarkTemplate(12);
     }
@@ -144,10 +214,10 @@ public class LaunchJMH {
 //    public void benchmarkTrimou(LaunchJMH state, Blackhole bh) {
 //        benchmarkTemplate(13);
 //    }
-    @Benchmark
-    public String benchmarkRocker() {
-        return benchmarkTemplate(14);
-    }
+//    @Benchmark
+//    public String benchmarkRocker() {
+//        return benchmarkTemplate(14);
+//    }
 //    @Benchmark
 //    public void benchmarkIckenham(LaunchJMH state, Blackhole bh) {
 //        benchmarkTemplate(15);

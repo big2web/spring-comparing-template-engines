@@ -39,7 +39,7 @@ public class PresentationsControllerTest {
 
 	@Before
 	public void setUp() throws Exception {
-		modelMap = new ModelMap();		
+		modelMap = new ModelMap();
 	}
 
 	@Test
@@ -47,7 +47,7 @@ public class PresentationsControllerTest {
 		MockHttpServletRequest request = new MockHttpServletRequest();
 		request.setServerName("localhost");
 		request.setRequestURI("/");
-		
+
 		String view = controller.home(request, modelMap);
 		assertEquals("index-jsp", view);
 	}
@@ -57,7 +57,7 @@ public class PresentationsControllerTest {
 		MockHttpServletRequest request = new MockHttpServletRequest();
 		request.setServerName("localhost");
 		request.setRequestURI("/test");
-		
+
 		final String view = controller.showList(request, "test", modelMap);
 		assertEquals("index-test", view);
 	}
@@ -81,6 +81,7 @@ public class PresentationsControllerTest {
 	}
 	@Test
 	public void should_return_view_content_for_HtmlFlow() throws Exception {
+		String s = jmh.benchmarkHtmlFlow();
 		String actual = Pattern
 			.compile("\\n")
 			.splitAsStream(jmh.benchmarkHtmlFlow())
@@ -90,6 +91,7 @@ public class PresentationsControllerTest {
 	}
 	@Test
 	public void should_return_view_content_for_Jsp() throws Exception {
+		String s = jmh.benchmarkJsp();
 		String actual = Pattern
 			.compile("\\n")
 			.splitAsStream(jmh.benchmarkJsp())
@@ -97,6 +99,7 @@ public class PresentationsControllerTest {
 			.collect(joining(""));
 		assertTemplateOutput(actual, "JSP");
 	}
+
 	static void assertTemplateOutput(String actual, String name) {
 		final Pattern MARKUP = Pattern.compile("<");
 		Iterator<String> expected = MARKUP
