@@ -165,8 +165,10 @@ public class LaunchJMH {
     public String benchmarkJsp() {
         return benchmarkTemplate(0);
     }
-
-
+    @Benchmark
+    public String benchmarkFreemarker() {
+        return benchmarkTemplate(1);
+    }
 //    @Benchmark
 //    public void benchmarkVelocity(LaunchJMH state, Blackhole bh) {
 //        benchmarkTemplate(2);
