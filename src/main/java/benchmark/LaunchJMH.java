@@ -1,29 +1,26 @@
 package benchmark;
 
 import com.jeroenreijn.examples.Launch;
-import org.apache.jasper.tagplugins.jstl.core.Url;
 import org.openjdk.jmh.annotations.*;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
-import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 
 /**
  * Some code on this class has been sampled from https://stackoverflow.com/a/41499972
@@ -54,19 +51,24 @@ public class LaunchJMH {
             "liqp"
     };
 
-    static ConfigurableApplicationContext context;
-    static MockMvc mockMvc;
-
-
+    private static ConfigurableApplicationContext context;
+    private static MockMvc mockMvc;
+    private static boolean isMock = false;
+    private static String domainUrl = "/";
 
     @Setup(Level.Trial)
     public synchronized void startupSpring() {
         try {
             if (context == null) {
                 context = SpringApplication.run(Launch.class);
-                WebApplicationContext webApplicationContext = (WebApplicationContext) context;
-                mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext)
-                        .build();
+                if (isMock) {
+                    WebApplicationContext webApplicationContext = (WebApplicationContext) context;
+                    mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext)
+                            .build();
+                } else {
+                    String port = context.getEnvironment().getProperty("local.server.port");
+                    domainUrl = "http://localhost:" + port + domainUrl;
+                }
             }
         } catch (Exception e) {
             //Force JMH crash
@@ -82,21 +84,15 @@ public class LaunchJMH {
                 context = null;
             }
         } catch (Exception e) {
-            //Force JMH crash
+            //Force JMH to crash when there is an exception
             throw new RuntimeException(e);
         }
     }
 
-    private static boolean isMock = false;
     private String benchmarkTemplate(int templateIdx) {
-        String url = "/" + templates[templateIdx];
+        String url = domainUrl + templates[templateIdx];
         try {
-            if(isMock) {
-                return mockMvcGetRequest(url);
-            } else {
-                //Assuming port and not reading from config!
-                return httpGetRequest("http://localhost:8080" + url);
-            }
+            return isMock ? mockMvcGetRequest(url) : httpGetRequest(url);
         } catch (Exception e) {
             //Force JMH crash
             throw new RuntimeException(e);
@@ -105,6 +101,7 @@ public class LaunchJMH {
 
     /**
      * Performs a request to an url.
+     *
      * @param urlStr The request url string.
      * @return The response string.
      * @throws RuntimeException IOException.
@@ -134,7 +131,7 @@ public class LaunchJMH {
         ).andDo(print());
         MockHttpServletResponse response = res.andReturn().getResponse();
         String forwardedUrl = response.getForwardedUrl();
-        if(forwardedUrl != null) {
+        if (forwardedUrl != null) {
             res = mockMvc.perform(
                     get(forwardedUrl)
                             .accept(MediaType.ALL_VALUE)
@@ -147,8 +144,10 @@ public class LaunchJMH {
     }
 
     /**
+     * Helper method for {@link #httpGetRequest}'s {@link InputStream} to String conversion.
      * Most performant out of other options:
      * https://stackoverflow.com/questions/309424/how-do-i-read-convert-an-inputstream-into-a-string-in-java
+     *
      * @param inputStream The input stream to convert to string.
      * @return The resulting string.
      */
